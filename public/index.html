@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulasi Portofolio 5 Tahun</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,wght@0,300;0,600;1,300&family=Inter:wght@400;500;600&display=swap');
+  :root {
+    --bg:#0d0f14;--surface:#161920;--surface2:#1e2230;--border:#2a2f3e;
+    --accent:#4fffb0;--accent-dim:rgba(79,255,176,0.12);--accent-gold:#f5c842;
+    --accent-red:#ff6b6b;--text:#e8eaf0;--muted:#6b7280;
+    --btc:#f7931a;--eth:#627eea;--sp500:#4fffb0;--gold:#f5c842;--idx:#a78bfa;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-size:14px;line-height:1.6;min-height:100vh;}
+  header{padding:24px 24px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;}
+  header h1{font-family:'Fraunces',serif;font-size:clamp(20px,4vw,30px);font-weight:300;letter-spacing:-0.5px;}
+  header h1 em{font-style:italic;color:var(--accent);}
+  header p{color:var(--muted);font-size:12px;}
+  .tabs{display:flex;gap:4px;background:var(--surface);border-radius:8px;padding:4px;}
+  .tab{padding:6px 14px;border-radius:6px;font-size:12px;font-family:'DM Mono',monospace;cursor:pointer;border:none;background:transparent;color:var(--muted);transition:all .2s;}
+  .tab.active{background:var(--surface2);color:var(--text);}
+  .layout{display:grid;grid-template-columns:300px 1fr;min-height:calc(100vh - 80px);}
+  .sidebar{background:var(--surface);border-right:1px solid var(--border);padding:20px;overflow-y:auto;max-height:calc(100vh - 80px);}
+  .section-label{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+  .input-group{margin-bottom:16px;}
+  .input-group label{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);margin-bottom:5px;}
+  .input-group label span{font-family:'DM Mono',monospace;font-size:12px;color:var(--text);}
+  input[type="range"]{-webkit-appearance:none;width:100%;height:3px;background:var(--border);border-radius:2px;outline:none;cursor:pointer;}
+  input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:var(--accent);cursor:pointer;}
+  .asset-slider.btc input[type="range"]::-webkit-slider-thumb{background:var(--btc);}
+  .asset-slider.eth input[type="range"]::-webkit-slider-thumb{background:var(--eth);}
+  .asset-slider.gold input[type="range"]::-webkit-slider-thumb{background:var(--gold);}
+  .asset-slider.idx input[type="range"]::-webkit-slider-thumb{background:var(--idx);}
+  .number-input{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 12px;margin-top:5px;}
+  .number-input span{color:var(--muted);font-size:12px;white-space:nowrap;}
+  .number-input input[type="number"]{background:transparent;border:none;outline:none;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;width:100%;}
+  .alloc-bar{display:flex;height:5px;border-radius:3px;overflow:hidden;margin:12px 0 16px;gap:2px;}
+  .alloc-seg{transition:flex .3s;border-radius:2px;}
+  .warning{font-family:'DM Mono',monospace;font-size:11px;color:var(--accent-red);text-align:center;padding:5px 10px;background:rgba(255,107,107,0.1);border-radius:6px;margin-bottom:10px;display:none;}
+  .warning.show{display:block;}
+  .main{padding:20px;background:var(--bg);overflow-y:auto;max-height:calc(100vh - 80px);}
+  .panel{display:none;}.panel.active{display:block;}
+  .result-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:20px;}
+  .result-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;}
+  .result-card.highlight{border-color:var(--accent);background:linear-gradient(135deg,var(--surface) 0%,rgba(79,255,176,0.05) 100%);}
+  .card-label{font-size:11px;color:var(--muted);margin-bottom:5px;font-family:'DM Mono',monospace;}
+  .card-value{font-family:'Fraunces',serif;font-size:clamp(16px,2.5vw,24px);font-weight:600;color:var(--text);line-height:1.1;}
+  .result-card.highlight .card-value{color:var(--accent);}
+  .card-sub{font-size:11px;color:var(--muted);margin-top:3px;}
+  .chart-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:16px;}
+  .chart-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
+  .chart-title{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);}
+  .legend{display:flex;gap:12px;flex-wrap:wrap;}
+  .legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);}
+  .legend-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+  canvas{width:100%!important;max-height:260px;}
+  .breakdown{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+  .breakdown-header{padding:12px 18px;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);}
+  table{width:100%;border-collapse:collapse;}
+  th{text-align:left;padding:9px 16px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);}
+  th:not(:first-child){text-align:right;}
+  td{padding:11px 16px;border-bottom:1px solid rgba(42,47,62,0.5);font-size:12px;}
+  td:not(:first-child){text-align:right;}
+  tr:last-child td{border-bottom:none;}
+  .asset-name{display:flex;align-items:center;gap:8px;}
+  .asset-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+  .asset-tag{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);}
+  .gain-pos{color:var(--accent);font-family:'DM Mono',monospace;font-size:11px;}
+  .gain-neg{color:var(--accent-red);font-family:'DM Mono',monospace;font-size:11px;}
+  .val-mono{font-family:'DM Mono',monospace;font-size:11px;}
+  .risk-badge{display:inline-block;font-size:9px;font-family:'DM Mono',monospace;padding:2px 6px;border-radius:4px;text-transform:uppercase;}
+  .risk-low{background:rgba(79,255,176,0.1);color:var(--accent);}
+  .risk-med{background:rgba(245,200,66,0.1);color:var(--accent-gold);}
+  .risk-high{background:rgba(255,107,107,0.1);color:var(--accent-red);}
+  .section-divider{margin:20px 0 14px;padding-top:14px;border-top:1px solid var(--border);}
+  .info-box{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:16px;font-size:12px;color:var(--muted);line-height:1.7;}
+  .info-box strong{color:var(--text);}
+  select{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 10px;font-size:12px;outline:none;cursor:pointer;width:100%;margin-top:5px;}
+  .compare-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;}
+  .compare-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;}
+  .compare-card .label{font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:6px;letter-spacing:0.5px;}
+  .compare-card .val{font-family:'Fraunces',serif;font-size:18px;font-weight:600;}
+  .compare-card .sub{font-size:11px;color:var(--muted);margin-top:3px;}
+  .c-base{border-color:var(--border);}.c-base .val{color:var(--text);}
+  .c-tp{border-color:var(--accent-gold);}.c-tp .val{color:var(--accent-gold);}
+  .c-rb{border-color:var(--accent);}.c-rb .val{color:var(--accent);}
+  .c-div{border-color:var(--idx);}.c-div .val{color:var(--idx);}
+  ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+  @media(max-width:700px){.layout{grid-template-columns:1fr;}.sidebar{max-height:none;border-right:none;border-bottom:1px solid var(--border);}.main{max-height:none;}.compare-grid{grid-template-columns:1fr 1fr;}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Simulasi Portofolio <em>5 Tahun</em></h1>
+    <p>DCA + Take Profit + Rebalancing + Reinvest Dividen</p>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('base')">Buy & Hold</button>
+    <button class="tab" onclick="switchTab('tp')">Take Profit</button>
+    <button class="tab" onclick="switchTab('rb')">Rebalancing</button>
+    <button class="tab" onclick="switchTab('div')">Dividen</button>
+    <button class="tab" onclick="switchTab('compare')">Perbandingan</button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar">
+    <!-- GLOBAL PARAMS -->
+    <div style="margin-bottom:22px;">
+      <div class="section-label">Parameter Dasar</div>
+      <div class="input-group">
+        <label>Setoran per Bulan <span id="val-monthly">Rp 1.000.000</span></label>
+        <div class="number-input"><span>Rp</span><input type="number" id="monthly" value="1000000" step="100000" min="100000" max="50000000"></div>
+      </div>
+      <div class="input-group">
+        <label>Durasi <span id="val-years">5 tahun</span></label>
+        <input type="range" id="years" min="1" max="10" value="5" step="1">
+      </div>
+    </div>
+
+    <!-- ALLOCATION -->
+    <div class="section-label">Alokasi Aset (%)</div>
+    <div class="alloc-bar">
+      <div class="alloc-seg" id="seg-sp500" style="background:var(--sp500)"></div>
+      <div class="alloc-seg" id="seg-idx" style="background:var(--idx)"></div>
+      <div class="alloc-seg" id="seg-gold" style="background:var(--gold)"></div>
+      <div class="alloc-seg" id="seg-btc" style="background:var(--btc)"></div>
+      <div class="alloc-seg" id="seg-eth" style="background:var(--eth)"></div>
+    </div>
+    <div class="warning" id="alloc-warning">⚠ Total alokasi harus 100%</div>
+    <div class="asset-slider sp500 input-group"><label>S&P 500 ETF <span id="val-sp500">30%</span></label><input type="range" id="alloc-sp500" min="0" max="100" value="30" step="5"></div>
+    <div class="asset-slider idx input-group"><label>Reksa Dana IDX <span id="val-idx">20%</span></label><input type="range" id="alloc-idx" min="0" max="100" value="20" step="5"></div>
+    <div class="asset-slider gold input-group"><label>Emas <span id="val-gold">20%</span></label><input type="range" id="alloc-gold" min="0" max="100" value="20" step="5"></div>
+    <div class="asset-slider btc input-group"><label>Bitcoin BTC/USDT <span id="val-btc">20%</span></label><input type="range" id="alloc-btc" min="0" max="100" value="20" step="5"></div>
+    <div class="asset-slider eth input-group"><label>Ethereum ETH/USDT <span id="val-eth">10%</span></label><input type="range" id="alloc-eth" min="0" max="100" value="10" step="5"></div>
+
+    <!-- RETURNS -->
+    <div class="section-label section-divider">Return / Tahun</div>
+    <div class="asset-slider sp500 input-group"><label>S&P 500 ETF <span id="ret-val-sp500">11%</span></label><input type="range" id="ret-sp500" min="0" max="40" value="11" step="1"></div>
+    <div class="asset-slider idx input-group"><label>Reksa Dana IDX <span id="ret-val-idx">9%</span></label><input type="range" id="ret-idx" min="0" max="40" value="9" step="1"></div>
+    <div class="asset-slider gold input-group"><label>Emas <span id="ret-val-gold">8%</span></label><input type="range" id="ret-gold" min="0" max="40" value="8" step="1"></div>
+    <div class="asset-slider btc input-group"><label>Bitcoin <span id="ret-val-btc">20%</span></label><input type="range" id="ret-btc" min="0" max="100" value="20" step="1"></div>
+    <div class="asset-slider eth input-group"><label>Ethereum <span id="ret-val-eth">18%</span></label><input type="range" id="ret-eth" min="0" max="100" value="18" step="1"></div>
+
+    <!-- TAKE PROFIT PARAMS -->
+    <div class="section-label section-divider">Take Profit (Tab TP)</div>
+    <div class="info-box">Jika aset naik melebihi trigger, sebagian dijual dan hasilnya di-DCA kembali ke semua aset sesuai alokasi.</div>
+    <div class="input-group"><label>Trigger naik <span id="val-tp-trigger">50%</span></label><input type="range" id="tp-trigger" min="10" max="200" value="50" step="10"></div>
+    <div class="input-group"><label>Porsi dijual <span id="val-tp-sell">30%</span></label><input type="range" id="tp-sell" min="10" max="100" value="30" step="10"></div>
+
+    <!-- REBALANCING PARAMS -->
+    <div class="section-label section-divider">Rebalancing (Tab RB)</div>
+    <div class="info-box">Tiap periode, jual aset yang bobotnya melebihi target, beli aset yang bobotnya kurang.</div>
+    <div class="input-group">
+      <label>Frekuensi</label>
+      <select id="rb-freq">
+        <option value="3">Setiap 3 bulan</option>
+        <option value="6">Setiap 6 bulan</option>
+        <option value="12" selected>Setiap 12 bulan (tahunan)</option>
+      </select>
+    </div>
+
+    <!-- DIVIDEND PARAMS -->
+    <div class="section-label section-divider">Dividen (Tab DIV)</div>
+    <div class="info-box">Yield dividen diasumsikan reinvest otomatis ke aset yang sama.</div>
+    <div class="asset-slider sp500 input-group"><label>Dividen S&P 500 <span id="div-val-sp500">1.5%</span>/th</label><input type="range" id="div-sp500" min="0" max="10" value="1.5" step="0.5"></div>
+    <div class="asset-slider idx input-group"><label>Dividen IDX <span id="div-val-idx">3%</span>/th</label><input type="range" id="div-idx" min="0" max="10" value="3" step="0.5"></div>
+    <div class="asset-slider gold input-group"><label>Dividen Emas <span id="div-val-gold">0%</span>/th</label><input type="range" id="div-gold" min="0" max="5" value="0" step="0.5"></div>
+    <div class="asset-slider btc input-group"><label>Yield BTC (staking) <span id="div-val-btc">0%</span>/th</label><input type="range" id="div-btc" min="0" max="10" value="0" step="0.5"></div>
+    <div class="asset-slider eth input-group"><label>Yield ETH (staking) <span id="div-val-eth">4%</span>/th</label><input type="range" id="div-eth" min="0" max="10" value="4" step="0.5"></div>
+  </aside>
+
+  <main class="main">
+    <!-- BASE PANEL -->
+    <div class="panel active" id="panel-base">
+      <div class="result-grid">
+        <div class="result-card"><div class="card-label">Total Modal Masuk</div><div class="card-value" id="b-modal">-</div><div class="card-sub"><span id="b-months">60</span> bulan</div></div>
+        <div class="result-card highlight"><div class="card-label">Nilai Akhir</div><div class="card-value" id="b-final">-</div><div class="card-sub">tahun ke-<span id="b-yn">5</span></div></div>
+        <div class="result-card"><div class="card-label">Keuntungan</div><div class="card-value" id="b-gain">-</div><div class="card-sub" id="b-pct"></div></div>
+        <div class="result-card"><div class="card-label">Return Rata-rata</div><div class="card-value" id="b-weighted">-</div><div class="card-sub">tertimbang/tahun</div></div>
+      </div>
+      <div class="chart-wrap">
+        <div class="chart-header"><div class="chart-title">Pertumbuhan Bulanan — Buy &amp; Hold DCA</div>
+          <div class="legend"><div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>Portofolio</div><div class="legend-item"><div class="legend-dot" style="background:var(--border)"></div>Modal</div></div></div>
+        <canvas id="chart-base"></canvas>
+      </div>
+      <div class="breakdown"><div class="breakdown-header">Rincian per Aset</div>
+        <table><thead><tr><th>Aset</th><th>Alokasi</th><th>Return/th</th><th>Modal</th><th>Nilai Akhir</th><th>Gain</th><th>Risiko</th></tr></thead>
+        <tbody id="table-base"></tbody></table></div>
+    </div>
+
+    <!-- TAKE PROFIT PANEL -->
+    <div class="panel" id="panel-tp">
+      <div class="result-grid">
+        <div class="result-card"><div class="card-label">Total Modal Masuk</div><div class="card-value" id="tp-modal">-</div><div class="card-sub">tanpa TP vs dengan TP</div></div>
+        <div class="result-card highlight" style="border-color:var(--accent-gold);background:linear-gradient(135deg,var(--surface),rgba(245,200,66,0.05))"><div class="card-label">Nilai Akhir + TP</div><div class="card-value" id="tp-final" style="color:var(--accent-gold)">-</div><div class="card-sub" id="tp-pct"></div></div>
+        <div class="result-card"><div class="card-label">Keuntungan</div><div class="card-value" id="tp-gain">-</div><div class="card-sub" id="tp-vs">vs Buy &amp; Hold</div></div>
+        <div class="result-card"><div class="card-label">Take Profit Events</div><div class="card-value" id="tp-events" style="color:var(--accent-gold)">-</div><div class="card-sub">total eksekusi TP</div></div>
+      </div>
+      <div class="chart-wrap">
+        <div class="chart-header"><div class="chart-title">Perbandingan dengan &amp; tanpa Take Profit</div>
+          <div class="legend"><div class="legend-item"><div class="legend-dot" style="background:var(--accent-gold)"></div>Dengan TP</div><div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>Tanpa TP</div><div class="legend-item"><div class="legend-dot" style="background:var(--border)"></div>Modal</div></div></div>
+        <canvas id="chart-tp"></canvas>
+      </div>
+      <div class="breakdown"><div class="breakdown-header">Log Take Profit Events</div>
+        <table><thead><tr><th>Bulan</th><th>Aset</th><th>Nilai Saat TP</th><th>% Naik</th><th>Dijual</th><th>Reinvest</th></tr></thead>
+        <tbody id="table-tp"></tbody></table></div>
+    </div>
+
+    <!-- REBALANCING PANEL -->
+    <div class="panel" id="panel-rb">
+      <div class="result-grid">
+        <div class="result-card"><div class="card-label">Total Modal Masuk</div><div class="card-value" id="rb-modal">-</div><div class="card-sub"></div></div>
+        <div class="result-card highlight" style="border-color:var(--accent);"><div class="card-label">Nilai Akhir + Rebalancing</div><div class="card-value" id="rb-final">-</div><div class="card-sub" id="rb-pct"></div></div>
+        <div class="result-card"><div class="card-label">Keuntungan</div><div class="card-value" id="rb-gain">-</div><div class="card-sub" id="rb-vs"></div></div>
+        <div class="result-card"><div class="card-label">Rebalancing Events</div><div class="card-value" id="rb-events" style="color:var(--accent)">-</div><div class="card-sub">total eksekusi</div></div>
+      </div>
+      <div class="chart-wrap">
+        <div class="chart-header"><div class="chart-title">Portofolio dengan Rebalancing</div>
+          <div class="legend"><div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>Dengan Rebalancing</div><div class="legend-item"><div class="legend-dot" style="background:var(--muted)"></div>Tanpa Rebalancing</div><div class="legend-item"><div class="legend-dot" style="background:var(--border)"></div>Modal</div></div></div>
+        <canvas id="chart-rb"></canvas>
+      </div>
+      <div class="breakdown"><div class="breakdown-header">Log Rebalancing Events</div>
+        <table><thead><tr><th>Bulan</th><th>Aset</th><th>Bobot Aktual</th><th>Target</th><th>Aksi</th><th>Nominal</th></tr></thead>
+        <tbody id="table-rb"></tbody></table></div>
+    </div>
+
+    <!-- DIVIDEND PANEL -->
+    <div class="panel" id="panel-div">
+      <div class="result-grid">
+        <div class="result-card"><div class="card-label">Total Modal Masuk</div><div class="card-value" id="div-modal">-</div></div>
+        <div class="result-card highlight" style="border-color:var(--idx);background:linear-gradient(135deg,var(--surface),rgba(167,139,250,0.05))"><div class="card-label">Nilai Akhir + Dividen</div><div class="card-value" id="div-final" style="color:var(--idx)">-</div><div class="card-sub" id="div-pct"></div></div>
+        <div class="result-card"><div class="card-label">Keuntungan</div><div class="card-value" id="div-gain">-</div><div class="card-sub" id="div-vs"></div></div>
+        <div class="result-card"><div class="card-label">Total Dividen Diterima</div><div class="card-value" id="div-total" style="color:var(--idx)">-</div><div class="card-sub">selama investasi</div></div>
+      </div>
+      <div class="chart-wrap">
+        <div class="chart-header"><div class="chart-title">Efek Reinvest Dividen</div>
+          <div class="legend"><div class="legend-item"><div class="legend-dot" style="background:var(--idx)"></div>Dengan Dividen</div><div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>Tanpa Dividen</div><div class="legend-item"><div class="legend-dot" style="background:var(--border)"></div>Modal</div></div></div>
+        <canvas id="chart-div"></canvas>
+      </div>
+      <div class="breakdown"><div class="breakdown-header">Rincian Dividen per Aset</div>
+        <table><thead><tr><th>Aset</th><th>Yield/th</th><th>Modal</th><th>Nilai Tanpa Div</th><th>Nilai + Div</th><th>Total Dividen</th></tr></thead>
+        <tbody id="table-div"></tbody></table></div>
+    </div>
+
+    <!-- COMPARE PANEL -->
+    <div class="panel" id="panel-compare">
+      <div style="margin-bottom:16px;">
+        <div class="chart-title" style="margin-bottom:10px;">PERBANDINGAN SEMUA STRATEGI</div>
+        <div class="compare-grid">
+          <div class="compare-card c-base"><div class="label">BUY &amp; HOLD</div><div class="val" id="cmp-base">-</div><div class="sub" id="cmp-base-pct">-</div></div>
+          <div class="compare-card c-tp"><div class="label">+ TAKE PROFIT</div><div class="val" id="cmp-tp">-</div><div class="sub" id="cmp-tp-pct">-</div></div>
+          <div class="compare-card c-rb"><div class="label">+ REBALANCING</div><div class="val" id="cmp-rb">-</div><div class="sub" id="cmp-rb-pct">-</div></div>
+          <div class="compare-card c-div"><div class="label">+ DIVIDEN</div><div class="val" id="cmp-div">-</div><div class="sub" id="cmp-div-pct">-</div></div>
+          <div class="compare-card" style="border-color:var(--accent-red);grid-column:span 2;"><div class="label">MODAL MASUK</div><div class="val" id="cmp-modal" style="color:var(--accent-red)">-</div><div class="sub">total setoran</div></div>
+        </div>
+      </div>
+      <div class="chart-wrap">
+        <div class="chart-header"><div class="chart-title">Semua Strategi dalam Satu Grafik</div>
+          <div class="legend">
+            <div class="legend-item"><div class="legend-dot" style="background:var(--text)"></div>Buy &amp; Hold</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--accent-gold)"></div>Take Profit</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>Rebalancing</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--idx)"></div>Dividen</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--border)"></div>Modal</div>
+          </div></div>
+        <canvas id="chart-compare"></canvas>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+const ASSETS = [
+  {id:'sp500',label:'S&P 500 ETF',tag:'VOO/IVV',color:'#4fffb0',risk:'low'},
+  {id:'idx',label:'Reksa Dana IDX',tag:'IHSG',color:'#a78bfa',risk:'med'},
+  {id:'gold',label:'Emas',tag:'ANTAM',color:'#f5c842',risk:'low'},
+  {id:'btc',label:'Bitcoin',tag:'BTC/USDT',color:'#f7931a',risk:'high'},
+  {id:'eth',label:'Ethereum',tag:'ETH/USDT',color:'#627eea',risk:'high'},
+];
+const RISK_LABEL={low:'Rendah',med:'Sedang',high:'Tinggi'};
+const RISK_CLASS={low:'risk-low',med:'risk-med',high:'risk-high'};
+
+let state = {};
+
+function fmt(n){
+  if(n>=1e9) return 'Rp '+(n/1e9).toFixed(2)+' M';
+  if(n>=1e6) return 'Rp '+(n/1e6).toFixed(1)+' jt';
+  return 'Rp '+Math.round(n).toLocaleString('id');
+}
+
+function fv(pmt,rAnnual,months){
+  const r=rAnnual/12;
+  if(r===0) return pmt*months;
+  return pmt*((Math.pow(1+r,months)-1)/r);
+}
+
+function getParams(){
+  const monthly=parseFloat(document.getElementById('monthly').value)||1000000;
+  const years=parseInt(document.getElementById('years').value);
+  const months=years*12;
+  const assets=ASSETS.map(a=>({
+    ...a,
+    alloc:parseInt(document.getElementById('alloc-'+a.id).value),
+    ret:parseInt(document.getElementById('ret-'+a.id).value)/100,
+    div:parseFloat(document.getElementById('div-'+a.id).value)/100,
+  }));
+  const totalAlloc=assets.reduce((s,a)=>s+a.alloc,0);
+  document.getElementById('alloc-warning').classList.toggle('show',totalAlloc!==100);
+  const tpTrigger=parseInt(document.getElementById('tp-trigger').value)/100;
+  const tpSell=parseInt(document.getElementById('tp-sell').value)/100;
+  const rbFreq=parseInt(document.getElementById('rb-freq').value);
+  return {monthly,years,months,assets,totalAlloc,tpTrigger,tpSell,rbFreq};
+}
+
+// ---- SIMULATIONS ----
+
+function simBase(p){
+  const rows=p.assets.map(a=>{
+    const pmt=p.monthly*(a.alloc/100);
+    const capital=pmt*p.months;
+    const final=fv(pmt,a.ret,p.months);
+    return{...a,pmt,capital,final,gain:final-capital};
+  });
+  const totalFinal=rows.reduce((s,r)=>s+r.final,0);
+  const totalCapital=p.monthly*p.months;
+  // series
+  const series=[];
+  for(let m=0;m<=p.months;m++){
+    let v=0;
+    rows.forEach(a=>{const r=a.ret/12;v+=r===0?a.pmt*m:a.pmt*((Math.pow(1+r,m)-1)/r);});
+    series.push(v);
+  }
+  return{rows,totalFinal,totalCapital,series};
+}
+
+function simTP(p){
+  // Monthly simulation with take profit
+  let holdings={}; // asset.id -> {units, costBasis (tracking for display)}
+  let assetValues={}; // current values
+  let assetBaselines={}; // value at last TP
+  ASSETS.forEach(a=>{holdings[a.id]=0;assetValues[a.id]=0;assetBaselines[a.id]=0;});
+
+  const series=[];
+  const baseSeriesRef=simBase(p).series;
+  const events=[];
+  let totalReinvest=0;
+
+  for(let m=1;m<=p.months;m++){
+    // Grow existing holdings
+    p.assets.forEach(a=>{
+      const r=a.ret/12;
+      assetValues[a.id]=assetValues[a.id]*(1+r);
+    });
+
+    // DCA buy
+    p.assets.forEach(a=>{
+      const buy=p.monthly*(a.alloc/100);
+      assetValues[a.id]+=buy;
+      if(assetBaselines[a.id]===0) assetBaselines[a.id]=buy;
+    });
+
+    // Check TP
+    let reinvestPool=0;
+    p.assets.forEach(a=>{
+      if(assetBaselines[a.id]>0&&assetValues[a.id]>assetBaselines[a.id]*(1+p.tpTrigger)){
+        const sellAmt=assetValues[a.id]*p.tpSell;
+        reinvestPool+=sellAmt;
+        assetValues[a.id]-=sellAmt;
+        const pctUp=((assetValues[a.id]+sellAmt)/assetBaselines[a.id]-1)*100;
+        events.push({m,asset:a.label,value:assetValues[a.id]+sellAmt,pctUp,sold:sellAmt});
+        assetBaselines[a.id]=assetValues[a.id];
+      }
+    });
+
+    // Reinvest pool into all assets by allocation
+    if(reinvestPool>0){
+      totalReinvest+=reinvestPool;
+      p.assets.forEach(a=>{
+        assetValues[a.id]+=reinvestPool*(a.alloc/100);
+      });
+      if(events.length>0) events[events.length-1].reinvest=reinvestPool;
+    }
+
+    const total=Object.values(assetValues).reduce((s,v)=>s+v,0);
+    series.push(total);
+  }
+
+  series.unshift(0);
+  const totalFinal=series[series.length-1];
+  const totalCapital=p.monthly*p.months;
+  return{series,totalFinal,totalCapital,events};
+}
+
+function simRB(p){
+  let assetValues={};
+  ASSETS.forEach(a=>{assetValues[a.id]=0;});
+  const series=[];
+  const events=[];
+  const targetAlloc={};
+  p.assets.forEach(a=>{targetAlloc[a.id]=a.alloc/100;});
+
+  for(let m=1;m<=p.months;m++){
+    // Grow
+    p.assets.forEach(a=>{
+      const r=a.ret/12;
+      assetValues[a.id]=assetValues[a.id]*(1+r);
+    });
+    // DCA
+    p.assets.forEach(a=>{
+      assetValues[a.id]+=p.monthly*(a.alloc/100);
+    });
+    // Rebalance
+    if(m%p.rbFreq===0){
+      const total=Object.values(assetValues).reduce((s,v)=>s+v,0);
+      p.assets.forEach(a=>{
+        const actual=assetValues[a.id]/total;
+        const target=targetAlloc[a.id];
+        const diff=(actual-target)*total;
+        if(Math.abs(diff)>1000){
+          events.push({m,asset:a.label,actual:(actual*100).toFixed(1),target:(target*100).toFixed(1),action:diff>0?'Jual':'Beli',nominal:Math.abs(diff)});
+          assetValues[a.id]-=diff;
+        }
+      });
+    }
+    series.push(Object.values(assetValues).reduce((s,v)=>s+v,0));
+  }
+  series.unshift(0);
+  const totalFinal=series[series.length-1];
+  const totalCapital=p.monthly*p.months;
+  return{series,totalFinal,totalCapital,events};
+}
+
+function simDiv(p){
+  const rows=p.assets.map(a=>{
+    const pmt=p.monthly*(a.alloc/100);
+    const capital=pmt*p.months;
+    const totalReturn=a.ret+a.div;
+    const finalWithDiv=fv(pmt,totalReturn,p.months);
+    const finalNoDiv=fv(pmt,a.ret,p.months);
+    const totalDivIncome=finalWithDiv-finalNoDiv;
+    return{...a,pmt,capital,finalWithDiv,finalNoDiv,totalDivIncome};
+  });
+  const totalFinal=rows.reduce((s,r)=>s+r.finalWithDiv,0);
+  const totalCapital=p.monthly*p.months;
+  const totalDivTotal=rows.reduce((s,r)=>s+r.totalDivIncome,0);
+  const series=[];
+  for(let m=0;m<=p.months;m++){
+    let v=0;
+    rows.forEach(a=>{const r=(a.ret+a.div)/12;v+=r===0?a.pmt*m:a.pmt*((Math.pow(1+r,m)-1)/r);});
+    series.push(v);
+  }
+  return{rows,totalFinal,totalCapital,totalDivTotal,series};
+}
+
+// ---- CHART ----
+function drawLineChart(canvasId,seriesList,labels,months){
+  const canvas=document.getElementById(canvasId);
+  if(!canvas) return;
+  const W=canvas.offsetWidth||600;
+  const H=260;
+  canvas.width=W;canvas.height=H;
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+  const pad={top:20,right:20,bottom:36,left:72};
+  const cW=W-pad.left-pad.right;
+  const cH=H-pad.top-pad.bottom;
+  const allVals=seriesList.flatMap(s=>s.data);
+  const maxVal=Math.max(...allVals)*1.05;
+  const toX=i=>pad.left+(i/months)*cW;
+  const toY=v=>pad.top+cH-(v/maxVal)*cH;
+  // grid
+  ctx.strokeStyle='#2a2f3e';ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const y=pad.top+(i/4)*cH;
+    ctx.beginPath();ctx.moveTo(pad.left,y);ctx.lineTo(pad.left+cW,y);ctx.stroke();
+    const v=((4-i)/4)*maxVal;
+    ctx.fillStyle='#6b7280';ctx.font='10px DM Mono,monospace';ctx.textAlign='right';
+    ctx.fillText(v>=1e6?(v/1e6).toFixed(0)+'jt':(v/1e3).toFixed(0)+'rb',pad.left-6,y+4);
+  }
+  // year labels
+  const yrs=Math.round(months/12);
+  ctx.fillStyle='#6b7280';ctx.font='10px DM Mono,monospace';ctx.textAlign='center';
+  for(let y=0;y<=yrs;y++){ctx.fillText('Thn '+y,toX(y*12),H-10);}
+  // series
+  seriesList.forEach(s=>{
+    if(s.fill){
+      const grad=ctx.createLinearGradient(0,pad.top,0,pad.top+cH);
+      grad.addColorStop(0,s.fill+'33');grad.addColorStop(1,s.fill+'05');
+      ctx.beginPath();ctx.moveTo(toX(0),toY(s.data[0]));
+      for(let i=1;i<s.data.length;i++) ctx.lineTo(toX(i),toY(s.data[i]));
+      ctx.lineTo(toX(s.data.length-1),toY(0));ctx.lineTo(toX(0),toY(0));
+      ctx.closePath();ctx.fillStyle=grad;ctx.fill();
+    }
+    ctx.beginPath();ctx.moveTo(toX(0),toY(s.data[0]));
+    for(let i=1;i<s.data.length;i++) ctx.lineTo(toX(i),toY(s.data[i]));
+    ctx.strokeStyle=s.color;ctx.lineWidth=s.width||2;ctx.stroke();
+  });
+}
+
+// ---- RENDER ----
+function render(){
+  const p=getParams();
+  if(p.totalAlloc!==100) return;
+
+  const base=simBase(p);
+  const tp=simTP(p);
+  const rb=simRB(p);
+  const div=simDiv(p);
+
+  state={p,base,tp,rb,div};
+
+  const capitalSeries=Array.from({length:p.months+1},(_,i)=>p.monthly*i);
+
+  // Labels
+  document.getElementById('val-years').textContent=p.years+' tahun';
+  document.getElementById('val-monthly').textContent='Rp '+p.monthly.toLocaleString('id');
+
+  // Alloc bar
+  ASSETS.forEach(a=>{document.getElementById('seg-'+a.id).style.flex=p.assets.find(x=>x.id===a.id).alloc;});
+
+  // BASE panel
+  document.getElementById('b-modal').textContent=fmt(base.totalCapital);
+  document.getElementById('b-months').textContent=p.months;
+  document.getElementById('b-final').textContent=fmt(base.totalFinal);
+  document.getElementById('b-yn').textContent=p.years;
+  const bGain=base.totalFinal-base.totalCapital;
+  document.getElementById('b-gain').textContent=(bGain>=0?'+':'')+fmt(bGain);
+  document.getElementById('b-gain').style.color=bGain>=0?'var(--accent)':'var(--accent-red)';
+  document.getElementById('b-pct').textContent=(bGain/base.totalCapital*100).toFixed(1)+'% dari modal';
+  const bw=p.assets.reduce((s,a)=>s+(a.alloc/100)*a.ret,0);
+  document.getElementById('b-weighted').textContent=(bw*100).toFixed(1)+'%';
+
+  document.getElementById('table-base').innerHTML=base.rows.map(a=>`
+    <tr><td><div class="asset-name"><div class="asset-dot" style="background:${a.color}"></div><div>${a.label}<br><span class="asset-tag">${a.tag}</span></div></div></td>
+    <td class="val-mono">${a.alloc}%</td><td class="val-mono">${(a.ret*100).toFixed(0)}%</td>
+    <td class="val-mono">${fmt(a.capital)}</td><td class="val-mono">${fmt(a.final)}</td>
+    <td class="${a.gain>=0?'gain-pos':'gain-neg'}">${a.gain>=0?'+':''}${fmt(a.gain)}</td>
+    <td><span class="risk-badge ${RISK_CLASS[a.risk]}">${RISK_LABEL[a.risk]}</span></td></tr>`).join('');
+
+  drawLineChart('chart-base',[
+    {data:base.series,color:'#4fffb0',fill:'#4fffb0',width:2},
+    {data:capitalSeries,color:'#2a2f3e',width:1.5}
+  ],null,p.months);
+
+  // TP panel
+  document.getElementById('tp-modal').textContent=fmt(tp.totalCapital);
+  document.getElementById('tp-final').textContent=fmt(tp.totalFinal);
+  const tpGain=tp.totalFinal-tp.totalCapital;
+  document.getElementById('tp-gain').textContent=(tpGain>=0?'+':'')+fmt(tpGain);
+  document.getElementById('tp-gain').style.color=tpGain>=0?'var(--accent)':'var(--accent-red)';
+  document.getElementById('tp-pct').textContent=((tpGain/tp.totalCapital)*100).toFixed(1)+'% dari modal';
+  document.getElementById('tp-events').textContent=tp.events.length;
+  const tpDiff=tp.totalFinal-base.totalFinal;
+  document.getElementById('tp-vs').textContent=(tpDiff>=0?'+':'')+fmt(tpDiff)+' vs Buy & Hold';
+
+  document.getElementById('table-tp').innerHTML=tp.events.length===0
+    ?'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">Tidak ada TP event — coba turunkan trigger</td></tr>'
+    :tp.events.slice(-20).map(e=>`<tr>
+    <td class="val-mono">Bln ${e.m}</td>
+    <td>${e.asset}</td>
+    <td class="val-mono">${fmt(e.value)}</td>
+    <td class="gain-pos">+${e.pctUp?e.pctUp.toFixed(1):'-'}%</td>
+    <td class="gain-neg">-${fmt(e.sold)}</td>
+    <td class="gain-pos">+${fmt(e.reinvest||0)}</td></tr>`).join('');
+
+  drawLineChart('chart-tp',[
+    {data:tp.series,color:'#f5c842',fill:'#f5c842',width:2},
+    {data:base.series,color:'#4fffb0',width:1.5},
+    {data:capitalSeries,color:'#2a2f3e',width:1.5}
+  ],null,p.months);
+
+  // RB panel
+  document.getElementById('rb-modal').textContent=fmt(rb.totalCapital);
+  document.getElementById('rb-final').textContent=fmt(rb.totalFinal);
+  const rbGain=rb.totalFinal-rb.totalCapital;
+  document.getElementById('rb-gain').textContent=(rbGain>=0?'+':'')+fmt(rbGain);
+  document.getElementById('rb-gain').style.color=rbGain>=0?'var(--accent)':'var(--accent-red)';
+  document.getElementById('rb-pct').textContent=((rbGain/rb.totalCapital)*100).toFixed(1)+'% dari modal';
+  document.getElementById('rb-events').textContent=rb.events.length;
+  const rbDiff=rb.totalFinal-base.totalFinal;
+  document.getElementById('rb-vs').textContent=(rbDiff>=0?'+':'')+fmt(rbDiff)+' vs Buy & Hold';
+
+  document.getElementById('table-rb').innerHTML=rb.events.length===0
+    ?'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">Tidak ada rebalancing</td></tr>'
+    :rb.events.slice(-20).map(e=>`<tr>
+    <td class="val-mono">Bln ${e.m}</td><td>${e.asset}</td>
+    <td class="val-mono">${e.actual}%</td><td class="val-mono">${e.target}%</td>
+    <td class="${e.action==='Jual'?'gain-neg':'gain-pos'}">${e.action}</td>
+    <td class="val-mono">${fmt(e.nominal)}</td></tr>`).join('');
+
+  drawLineChart('chart-rb',[
+    {data:rb.series,color:'#4fffb0',fill:'#4fffb0',width:2},
+    {data:base.series,color:'#6b7280',width:1.5},
+    {data:capitalSeries,color:'#2a2f3e',width:1.5}
+  ],null,p.months);
+
+  // DIV panel
+  document.getElementById('div-modal').textContent=fmt(div.totalCapital);
+  document.getElementById('div-final').textContent=fmt(div.totalFinal);
+  const divGain=div.totalFinal-div.totalCapital;
+  document.getElementById('div-gain').textContent=(divGain>=0?'+':'')+fmt(divGain);
+  document.getElementById('div-gain').style.color=divGain>=0?'var(--accent)':'var(--accent-red)';
+  document.getElementById('div-pct').textContent=((divGain/div.totalCapital)*100).toFixed(1)+'% dari modal';
+  document.getElementById('div-total').textContent=fmt(div.totalDivTotal);
+  const divDiff=div.totalFinal-base.totalFinal;
+  document.getElementById('div-vs').textContent=(divDiff>=0?'+':'')+fmt(divDiff)+' vs tanpa dividen';
+
+  document.getElementById('table-div').innerHTML=div.rows.map(a=>`<tr>
+    <td><div class="asset-name"><div class="asset-dot" style="background:${a.color}"></div><div>${a.label}<br><span class="asset-tag">${a.tag}</span></div></div></td>
+    <td class="val-mono">${(a.div*100).toFixed(1)}%</td>
+    <td class="val-mono">${fmt(a.capital)}</td>
+    <td class="val-mono">${fmt(a.finalNoDiv)}</td>
+    <td class="val-mono" style="color:var(--idx)">${fmt(a.finalWithDiv)}</td>
+    <td class="gain-pos">+${fmt(a.totalDivIncome)}</td></tr>`).join('');
+
+  drawLineChart('chart-div',[
+    {data:div.series,color:'#a78bfa',fill:'#a78bfa',width:2},
+    {data:base.series,color:'#4fffb0',width:1.5},
+    {data:capitalSeries,color:'#2a2f3e',width:1.5}
+  ],null,p.months);
+
+  // COMPARE panel
+  document.getElementById('cmp-base').textContent=fmt(base.totalFinal);
+  document.getElementById('cmp-base-pct').textContent='+'+((bGain/base.totalCapital)*100).toFixed(1)+'%';
+  document.getElementById('cmp-tp').textContent=fmt(tp.totalFinal);
+  document.getElementById('cmp-tp-pct').textContent=(tpGain>=0?'+':'')+((tpGain/tp.totalCapital)*100).toFixed(1)+'%';
+  document.getElementById('cmp-rb').textContent=fmt(rb.totalFinal);
+  document.getElementById('cmp-rb-pct').textContent=(rbGain>=0?'+':'')+((rbGain/rb.totalCapital)*100).toFixed(1)+'%';
+  document.getElementById('cmp-div').textContent=fmt(div.totalFinal);
+  document.getElementById('cmp-div-pct').textContent=(divGain>=0?'+':'')+((divGain/div.totalCapital)*100).toFixed(1)+'%';
+  document.getElementById('cmp-modal').textContent=fmt(base.totalCapital);
+
+  drawLineChart('chart-compare',[
+    {data:base.series,color:'#e8eaf0',width:1.5},
+    {data:tp.series,color:'#f5c842',fill:'#f5c842',width:2},
+    {data:rb.series,color:'#4fffb0',width:2},
+    {data:div.series,color:'#a78bfa',width:2},
+    {data:capitalSeries,color:'#2a2f3e',width:1.5}
+  ],null,p.months);
+}
+
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach((t,i)=>{
+    const names=['base','tp','rb','div','compare'];
+    t.classList.toggle('active',names[i]===name);
+  });
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  setTimeout(render,50);
+}
+
+// Bind all inputs
+document.getElementById('monthly').addEventListener('input',render);
+document.getElementById('years').addEventListener('input',render);
+document.getElementById('rb-freq').addEventListener('change',render);
+['sp500','idx','gold','btc','eth'].forEach(id=>{
+  ['alloc-','ret-','div-'].forEach(pre=>{
+    const el=document.getElementById(pre+id);
+    if(el) el.addEventListener('input',()=>{
+      const valEl=document.getElementById((pre==='alloc-'?'val-':pre==='ret-'?'ret-val-':'div-val-')+id);
+      if(valEl) valEl.textContent=el.value+(pre==='div-'?'%':'%');
+      render();
+    });
+  });
+  document.getElementById('tp-trigger').addEventListener('input',()=>{document.getElementById('val-tp-trigger').textContent=document.getElementById('tp-trigger').value+'%';render();});
+  document.getElementById('tp-sell').addEventListener('input',()=>{document.getElementById('val-tp-sell').textContent=document.getElementById('tp-sell').value+'%';render();});
+});
+
+window.addEventListener('resize',()=>{const active=document.querySelector('.tab.active');if(active) render();});
+
+render();
+</script>
+</body>
+</html>
