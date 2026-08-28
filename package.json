@@ -1,0 +1,12 @@
+{
+  "name": "portfolio-simulator",
+  "version": "1.0.0",
+  "description": "DCA portfolio simulator with take profit, rebalancing & dividend reinvestment",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
